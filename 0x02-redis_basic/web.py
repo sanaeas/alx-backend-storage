@@ -15,10 +15,11 @@ def count_and_cache(method: Callable) -> Callable:
 
         r.incr(f"count:{url}")
 
-        cached_result = r.get(url)
+        cached_result = r.get(f"result:{url}")
         if cached_result:
             return cached_result.decode("utf-8")
         page_content = method(url)
+        r.set(f"count:{url}", 0)
         r.setex(f"result:{url}", 10, page_content)
         return page_content
 
