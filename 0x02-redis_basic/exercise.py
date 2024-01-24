@@ -10,13 +10,16 @@ def replay(method: Callable) -> None:
     """Display the history of calls for a particular function"""
     input_key = "{}:inputs".format(method.__qualname__)
     output_key = "{}:outputs".format(method.__qualname__)
-    inputs: List[bytes] = cache._redis.lrange(input_key, 0, -1)
-    outputs: List[bytes] = cache._redis.lrange(output_key, 0, -1)
-    print(f"{method.__qualname__} was called {len(inputs)} times:")
-    for input_args, output in zip(inputs, outputs):
-        input_args_str = input_args.decode("utf-8")
-        output_str = output.decode("utf-8")
+    calls: int = int(redis.Redis().get(method.__qualname__))
+    print(f"{method.__qualname__} was called {calls} times:")
 
+    inputs: List = redis.Redis().lrange(input_key, 0, -1)
+    outputs: List = redis.Redis().lrange(output_key, 0, -1)
+    history: List = list(zip(inputs, outputs))
+
+    for pair in history:
+        input_args_str = pair[0].decode("utf-8")
+        output_str = pair[1].decode("utf-8")
         print(f"{method.__qualname__}(*{input_args_str}) -> {output_str}")
 
 
