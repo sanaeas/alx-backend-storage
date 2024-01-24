@@ -2,7 +2,20 @@
 """ Module contains the Cache class"""
 import redis
 import uuid
-from typing import Union, Callable
+from typing import Union, Callable, Any
+from functools import wraps
+
+
+def count_calls(method: Callable) -> Callable:
+    """Decorator to count the number of times a method is called"""
+    @wraps(method)
+    def wrapper(self, *args, **kwargs) -> Any:
+        """Count method calls and call the original method"""
+        key = method.__qualname__
+        self._redis.incr(key)
+        return method(self, *args, **kwargs)
+
+    return wrapper
 
 
 class Cache:
@@ -13,6 +26,7 @@ class Cache:
         self._redis = redis.Redis()
         self._redis.flushdb()
 
+    @count_calls
     def store(self, data: Union[str, bytes, int, float]) -> str:
         """Store the input data in Redis using a randomly generated key"""
         key = str(uuid.uuid4())
@@ -36,4 +50,4 @@ class Cache:
 
     def get_int(self, key: str) -> int:
         """Retrieve an integer from Redis using the provided key"""
-        return self.get(key, int)
+        return self.get(key, fn=int)
